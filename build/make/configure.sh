@@ -617,6 +617,11 @@ show_darwin_sdk_path() {
     xcodebuild -sdk $1 -version Path 2>/dev/null
 }
 
+# Print the major version number of the Darwin SDK specified by $1.
+show_darwin_sdk_major_version() {
+  xcrun --sdk $1 --show-sdk-version 2>/dev/null | cut -d. -f1
+}
+
 process_common_toolchain() {
   if [ -z "$toolchain" ]; then
     gcctarget="${CHOST:-$(gcc -dumpmachine 2> /dev/null)}"
@@ -743,13 +748,13 @@ process_common_toolchain() {
   # platforms, so use the newest one available.
   case ${toolchain} in
     arm*-darwin*)
-      ios_sdk_dir="$(show_darwin_sdk_path iphoneos)"
-      if [ -d "${ios_sdk_dir}" ]; then
-        add_cflags  "-isysroot ${ios_sdk_dir} -miphoneos-version-min=6.0"
-        add_ldflags "-isysroot ${ios_sdk_dir} -miphoneos-version-min=6.0"
+      iphoneos_sdk_dir="$(show_darwin_sdk_path iphoneos)"
+      if [ -d "${iphoneos_sdk_dir}" ]; then
+        add_cflags  "-isysroot ${iphoneos_sdk_dir}"
+        add_ldflags "-isysroot ${iphoneos_sdk_dir}"
       fi
       ;;
-    *-darwin*)
+    x86*-darwin*)
       osx_sdk_dir="$(show_darwin_sdk_path macosx)"
       if [ -d "${osx_sdk_dir}" ]; then
         add_cflags  "-isysroot ${osx_sdk_dir}"
@@ -826,18 +831,35 @@ process_common_toolchain() {
             die "Disabling neon while keeping neon-asm is not supported"
           fi
           case ${toolchain} in
+            # Apple iOS SDKs no longer support armv6 as of the version 9
+            # release (coincides with release of Xcode 7). Only enable media
+            # when using earlier SDK releases.
             *-darwin*)
-              # Neon is guaranteed on iOS 6+ devices, while old media extensions
-              # no longer assemble with iOS 9 SDK
+              if [ "$(show_darwin_sdk_major_version iphoneos)" -lt 9 ]; then
+                soft_enable media
+              else
+                soft_disable media
+                RTCD_OPTIONS="${RTCD_OPTIONS}--disable-media "
+              fi
               ;;
             *)
               soft_enable media
+              ;;
           esac
-          soft_enable fast_unaligned
           ;;
         armv6)
-          soft_enable media
-          soft_enable fast_unaligned
+          case ${toolchain} in
+            *-darwin*)
+              if [ "$(show_darwin_sdk_major_version iphoneos)" -lt 9 ]; then
+                soft_enable media
+              else
+                die "Your iOS SDK does not support armv6."
+              fi
+              ;;
+            *)
+              soft_enable media
+              ;;
+          esac
           ;;
       esac
 
