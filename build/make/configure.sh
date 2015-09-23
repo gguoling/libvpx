@@ -745,8 +745,8 @@ process_common_toolchain() {
     arm*-darwin*)
       ios_sdk_dir="$(show_darwin_sdk_path iphoneos)"
       if [ -d "${ios_sdk_dir}" ]; then
-        add_cflags  "-isysroot ${ios_sdk_dir}"
-        add_ldflags "-isysroot ${ios_sdk_dir}"
+        add_cflags  "-isysroot ${ios_sdk_dir} -miphoneos-version-min=6.0"
+        add_ldflags "-isysroot ${ios_sdk_dir} -miphoneos-version-min=6.0"
       fi
       ;;
     *-darwin*)
@@ -825,7 +825,14 @@ process_common_toolchain() {
           if disabled neon && enabled neon_asm; then
             die "Disabling neon while keeping neon-asm is not supported"
           fi
-          soft_enable media
+          case ${toolchain} in
+            *-darwin*)
+              # Neon is guaranteed on iOS 6+ devices, while old media extensions
+              # no longer assemble with iOS 9 SDK
+              ;;
+            *)
+              soft_enable media
+          esac
           soft_enable fast_unaligned
           ;;
         armv6)
