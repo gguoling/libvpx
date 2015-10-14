@@ -741,6 +741,9 @@ process_common_toolchain() {
       *os2*)
         tgt_os=os2
         ;;
+      *qnx*)
+        tgt_os=qnx
+        ;;
     esac
 
     if [ -n "$tgt_isa" ] && [ -n "$tgt_os" ]; then
@@ -976,6 +979,11 @@ EOF
         none*)
           disable_feature multithread
           disable_feature os_support
+          ;;
+          
+        qnx*)
+          disable_feature multithread
+          add_cflags --sysroot ${alt_libc}
           ;;
 
         android*)
