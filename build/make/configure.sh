@@ -983,7 +983,6 @@ EOF
           
         qnx*)
           disable_feature multithread
-          add_cflags --sysroot ${alt_libc}
           ;;
 
         android*)
