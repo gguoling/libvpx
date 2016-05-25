@@ -23,6 +23,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifdef __ANDROID__
+#define rand() lrand48()
+#endif
+
 #define RGB_TO_YUV(t)                                                                       \
     ( (0.257*(float)(t>>16)) + (0.504*(float)(t>>8&0xff)) + (0.098*(float)(t&0xff)) + 16),  \
     (-(0.148*(float)(t>>16)) - (0.291*(float)(t>>8&0xff)) + (0.439*(float)(t&0xff)) + 128), \
