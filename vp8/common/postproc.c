@@ -25,6 +25,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifdef __ANDROID__
+#define rand() lrand48()
+#endif
+
 /* clang-format off */
 #define RGB_TO_YUV(t)                                     \
   (unsigned char)((0.257 * (float)(t >> 16)) +            \

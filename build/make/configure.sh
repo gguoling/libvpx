@@ -927,6 +927,11 @@ process_common_toolchain() {
       if enabled runtime_cpu_detect; then
         add_cflags "-I${SDK_PATH}/sources/android/cpufeatures"
       fi
+
+      if [ ${tgt_isa} = "x86" ]; then
+        add_asflags "-D__ANDROID__"
+        add_cflags "-D__ANDROID__"
+      fi
       ;;
   esac
 
