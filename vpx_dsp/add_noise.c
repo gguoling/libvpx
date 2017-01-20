@@ -17,6 +17,10 @@
 #include "vpx/vpx_integer.h"
 #include "vpx_ports/mem.h"
 
+#ifdef __ANDROID__
+#define rand() lrand48()
+#endif
+
 void vpx_plane_add_noise_c(uint8_t *start, const int8_t *noise, int blackclamp,
                            int whiteclamp, int width, int height, int pitch) {
   int i, j;

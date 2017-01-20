@@ -875,6 +875,10 @@ process_common_toolchain() {
           ANDROID_TOOLCHAIN_PREFIX=arm-linux-androideabi
           ANDROID_TOOLCHAIN_ARCH=arm
           ;;
+        arm64)
+          ANDROID_TOOLCHAIN_PREFIX=aarch64-linux-android
+          ANDROID_TOOLCHAIN_ARCH=arm64
+          ;;
         x86)
           ANDROID_TOOLCHAIN_PREFIX=x86-linux-android
           ANDROID_TOOLCHAIN_ALT_PREFIX=x86_64-linux-android
