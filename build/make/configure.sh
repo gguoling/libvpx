@@ -967,7 +967,7 @@ process_common_toolchain() {
          # Cortex-A8 implementations (NDK Dev Guide)
          add_ldflags "-Wl,--fix-cortex-a8"
        fi
-       if [ ${tgt_isa} = "x86" ] || [${tgt_isa} = "x86_64"]; then
+       if [ ${tgt_isa} = "x86" ] || [ ${tgt_isa} = "x86_64" ]; then
          add_asflags "-D__ANDROID__"
          add_cflags "-D__ANDROID__"
        fi
@@ -980,6 +980,7 @@ process_common_toolchain() {
        if enabled runtime_cpu_detect; then
          add_cflags "-I${SDK_PATH}/sources/android/cpufeatures"
        fi
+       add_cflags "-I${SDK_PATH}/sysroot/usr/include -I${SDK_PATH}/sysroot/usr/include/${ANDROID_TOOLCHAIN_PREFIX}"
        ;;
    esac
 
