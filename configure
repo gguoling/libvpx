@@ -684,7 +684,7 @@ process_toolchain() {
             soft_enable libyuv
         ;;
         *-android-*)
-            soft_enable webm_io
+            check_add_cxxflags -std=c++11 && soft_enable webm_io
             soft_enable libyuv
             # GTestLog must be modified to use Android logging utilities.
         ;;
@@ -693,7 +693,7 @@ process_toolchain() {
             # x86 targets.
         ;;
         *-iphonesimulator-*)
-            soft_enable webm_io
+            check_add_cxxflags -std=c++11 && soft_enable webm_io
             soft_enable libyuv
         ;;
         *-win*)
