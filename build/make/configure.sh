@@ -943,7 +943,7 @@ process_common_toolchain() {
        CC=${TOOLCHAIN_PATH}gcc
        CXX=${TOOLCHAIN_PATH}g++
        AR=${TOOLCHAIN_PATH}ar
-       LD=${TOOLCHAIN_PATH}gcc
+       LD=${TOOLCHAIN_PATH}ld
        AS=${TOOLCHAIN_PATH}as
        STRIP=${TOOLCHAIN_PATH}strip
        NM=${TOOLCHAIN_PATH}nm
@@ -965,7 +965,18 @@ process_common_toolchain() {
        if [ ${tgt_isa} = "armv7" ]; then
          # linker flag that routes around a CPU bug in some
          # Cortex-A8 implementations (NDK Dev Guide)
-         add_ldflags "-Wl,--fix-cortex-a8"
+         fix_cortex_a8=1
+         if [ -f ${SDK_PATH}/source.properties ]; then
+             ndk_version=`cat ${SDK_PATH}/source.properties | tr -dc '0-9' | cut -c1-2`
+             echo "NDK version is ${ndk_version}"
+             if [ -n ${ndk_version} ] && [ ${ndk_version} -ge 18 ]; then
+                 # /!\ Not available in NDK 18
+                 fix_cortex_a8=0
+             fi
+         fi
+         if [ ${fix_cortex_a8} -eq 1 ]; then
+             add_ldflags "-Wl,--fix-cortex-a8"
+         fi
        fi
        if [ ${tgt_isa} = "x86" ] || [ ${tgt_isa} = "x86_64" ]; then
          add_asflags "-D__ANDROID__"
