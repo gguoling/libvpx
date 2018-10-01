@@ -975,7 +975,7 @@ process_common_toolchain() {
              fi
          fi
          if [ ${fix_cortex_a8} -eq 1 ]; then
-             add_ldflags "-Wl,--fix-cortex-a8"
+             add_ldflags "--fix-cortex-a8"
          fi
        fi
        if [ ${tgt_isa} = "x86" ] || [ ${tgt_isa} = "x86_64" ]; then
