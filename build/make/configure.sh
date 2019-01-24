@@ -612,6 +612,10 @@ process_common_cmdline() {
       --help|-h)
         show_help
         ;;
+      --android_ndk_api=*)
+        ANDROID_NDK_API_STRING=${optval}
+        ANDROID_NDK_API=$(echo "${ANDROID_NDK_API_STRING}" | tr -dc '0-9')
+        ;;
       *)
         die_unknown $opt
         ;;
@@ -913,6 +917,7 @@ process_common_toolchain() {
        case ${tgt_isa} in
          armv7)
            ANDROID_TOOLCHAIN_PREFIX=arm-linux-androideabi
+           ANDROID_TOOLCHAIN_ALT_PREFIX=armv7a-linux-androideabi
            ANDROID_TOOLCHAIN_ARCH=arm
            ;;
          x86)
@@ -927,26 +932,81 @@ process_common_toolchain() {
            ;;
          arm64)
           ANDROID_TOOLCHAIN_PREFIX=aarch64-linux-android
+          ANDROID_TOOLCHAIN_ALT_PREFIX=aarch64-linux-android
           ANDROID_TOOLCHAIN_ARCH=arm64
           ;;
        esac
 
+       FOUND=0
+       USE_GCC="YES"
        SDK_PATH=${sdk_path}
        COMPILER_LOCATION=`find "${SDK_PATH}" \
                           -name "${ANDROID_TOOLCHAIN_PREFIX}-gcc*" -print -quit`
+       ANDROID_TEMP_TOOLCHAIN_PREFIX=${ANDROID_TOOLCHAIN_PREFIX}
+
        if [ -z "${COMPILER_LOCATION}" ]; then
+         echo "gcc not found as ${ANDROID_TOOLCHAIN_PREFIX}-gcc"
          COMPILER_LOCATION=`find "${SDK_PATH}" \
                             -name "${ANDROID_TOOLCHAIN_ALT_PREFIX}-gcc*" -print -quit`
-         ANDROID_TOOLCHAIN_PREFIX=${ANDROID_TOOLCHAIN_ALT_PREFIX}
+       else
+         echo "gcc found as ${ANDROID_TOOLCHAIN_PREFIX}-gcc"
+         FOUND=1
        fi
-       TOOLCHAIN_PATH=${COMPILER_LOCATION%/*}/${ANDROID_TOOLCHAIN_PREFIX}-
-       CC=${TOOLCHAIN_PATH}gcc
-       CXX=${TOOLCHAIN_PATH}g++
-       AR=${TOOLCHAIN_PATH}ar
-       LD=${TOOLCHAIN_PATH}ld
-       AS=${TOOLCHAIN_PATH}as
-       STRIP=${TOOLCHAIN_PATH}strip
-       NM=${TOOLCHAIN_PATH}nm
+
+       if [ -z "${COMPILER_LOCATION}" ]; then
+         echo "gcc not found as ${ANDROID_TOOLCHAIN_ALT_PREFIX}-gcc"
+         COMPILER_LOCATION=`find "${SDK_PATH}/toolchains/llvm/prebuilt/" \
+                            -name "${ANDROID_TOOLCHAIN_PREFIX}${ANDROID_NDK_API}-clang*" -print -quit`
+         USE_GCC="NO"
+       elif [ ${FOUND} -eq 0 ]; then
+         echo "gcc found as ${ANDROID_TOOLCHAIN_ALT_PREFIX}-gcc"
+         ANDROID_TEMP_TOOLCHAIN_PREFIX=${ANDROID_TOOLCHAIN_ALT_PREFIX}
+         FOUND=1
+       fi
+
+       if [ -z "${COMPILER_LOCATION}" ]; then
+         echo "clang not found as ${ANDROID_TOOLCHAIN_PREFIX}${ANDROID_NDK_API}-clang"
+         COMPILER_LOCATION=`find "${SDK_PATH}/toolchains/llvm/prebuilt/" \
+                            -name "${ANDROID_TOOLCHAIN_ALT_PREFIX}${ANDROID_NDK_API}-clang*" -print -quit`
+         ANDROID_TEMP_TOOLCHAIN_PREFIX=${ANDROID_TOOLCHAIN_ALT_PREFIX}
+         USE_GCC="NO"
+       elif [ ${FOUND} -eq 0 ]; then
+         echo "clang found as ${ANDROID_TOOLCHAIN_PREFIX}${ANDROID_NDK_API}-clang"
+         FOUND=1
+       fi
+
+       if [ -z "${COMPILER_LOCATION}" ]; then
+         echo "clang not found as ${ANDROID_TOOLCHAIN_ALT_PREFIX}${ANDROID_NDK_API}-clang"
+       fi
+
+       if [ "${USE_GCC}" = "NO" ]; then
+         echo "Using clang at ${COMPILER_LOCATION%/*}/${ANDROID_TEMP_TOOLCHAIN_PREFIX}-clang"
+         TOOLCHAIN_PATH=${COMPILER_LOCATION%/*}/${ANDROID_TEMP_TOOLCHAIN_PREFIX}-
+         CC=${COMPILER_LOCATION%/*}/${ANDROID_TEMP_TOOLCHAIN_PREFIX}${ANDROID_NDK_API}-clang
+         CXX=${COMPILER_LOCATION%/*}/${ANDROID_TEMP_TOOLCHAIN_PREFIX}${ANDROID_NDK_API}-clang++
+
+         if [ -x ${TOOLCHAIN_PATH}ar ]; then 
+           echo "ar, ld, as, strip and nm seems to have the same toolchain path than clang"
+         else
+           echo "Couldn't find ar at ${TOOLCHAIN_PATH}ar, using ${COMPILER_LOCATION%/*}/${ANDROID_TOOLCHAIN_PREFIX}-ar instead and same for ld, as, strip and nm"
+           TOOLCHAIN_PATH=${COMPILER_LOCATION%/*}/${ANDROID_TOOLCHAIN_PREFIX}-
+         fi
+         AR=${TOOLCHAIN_PATH}ar
+         LD=${TOOLCHAIN_PATH}ld
+         AS=${TOOLCHAIN_PATH}as
+         STRIP=${TOOLCHAIN_PATH}strip
+         NM=${TOOLCHAIN_PATH}nm
+       else
+         echo "Using gcc at ${COMPILER_LOCATION%/*}/${ANDROID_TEMP_TOOLCHAIN_PREFIX}-gcc"
+         TOOLCHAIN_PATH=${COMPILER_LOCATION%/*}/${ANDROID_TEMP_TOOLCHAIN_PREFIX}-
+         CC=${TOOLCHAIN_PATH%}gcc
+         CXX=${TOOLCHAIN_PATH}g++
+         AR=${TOOLCHAIN_PATH}ar
+         LD=${TOOLCHAIN_PATH}ld
+         AS=${TOOLCHAIN_PATH}as
+         STRIP=${TOOLCHAIN_PATH}strip
+         NM=${TOOLCHAIN_PATH}nm
+       fi
 
        if [ -z "${alt_libc}" ]; then
          alt_libc=`find "${SDK_PATH}" -name arch-${ANDROID_TOOLCHAIN_ARCH} -print | \
@@ -991,7 +1051,13 @@ process_common_toolchain() {
        if enabled runtime_cpu_detect; then
          add_cflags "-I${SDK_PATH}/sources/android/cpufeatures"
        fi
-       add_cflags "-I${SDK_PATH}/sysroot/usr/include -I${SDK_PATH}/sysroot/usr/include/${ANDROID_TOOLCHAIN_PREFIX}"
+
+       add_cflags "-I${SDK_PATH}/sysroot/usr/include"
+       if [ -d ${ANDROID_TOOLCHAIN_PREFIX} ]; then
+         add_cflags "-I${SDK_PATH}/sysroot/usr/include/${ANDROID_TOOLCHAIN_ALT_PREFIX}"
+       else
+         add_cflags "-I${SDK_PATH}/sysroot/usr/include/${ANDROID_TOOLCHAIN_PREFIX}"
+       fi
        ;;
    esac
 
