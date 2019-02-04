@@ -613,8 +613,11 @@ process_common_cmdline() {
         show_help
         ;;
       --android_ndk_api=*)
-        ANDROID_NDK_API_STRING=${optval}
-        ANDROID_NDK_API=$(echo "${ANDROID_NDK_API_STRING}" | tr -dc '0-9')
+        _ANDROID_NDK_API_STRING=${optval}
+        _ANDROID_NDK_API_INT=$(echo "${_ANDROID_NDK_API_STRING}" | tr -dc '0-9')
+        if [ -z "${_ANDROID_NDK_API_INT}" ]; then
+          die "NDK API version couldn't be parsed from ${_ANDROID_NDK_API_STRING} !"
+        fi
         ;;
       *)
         die_unknown $opt
@@ -956,7 +959,7 @@ process_common_toolchain() {
        if [ -z "${COMPILER_LOCATION}" ]; then
          echo "gcc not found as ${ANDROID_TOOLCHAIN_ALT_PREFIX}-gcc"
          COMPILER_LOCATION=`find "${SDK_PATH}/toolchains/llvm/prebuilt/" \
-                            -name "${ANDROID_TOOLCHAIN_PREFIX}${ANDROID_NDK_API}-clang*" -print -quit`
+                            -name "${ANDROID_TOOLCHAIN_PREFIX}${_ANDROID_NDK_API_INT}-clang*" -print -quit`
          USE_GCC="NO"
        elif [ ${FOUND} -eq 0 ]; then
          echo "gcc found as ${ANDROID_TOOLCHAIN_ALT_PREFIX}-gcc"
@@ -965,25 +968,25 @@ process_common_toolchain() {
        fi
 
        if [ -z "${COMPILER_LOCATION}" ]; then
-         echo "clang not found as ${ANDROID_TOOLCHAIN_PREFIX}${ANDROID_NDK_API}-clang"
+         echo "clang not found as ${ANDROID_TOOLCHAIN_PREFIX}${_ANDROID_NDK_API_INT}-clang"
          COMPILER_LOCATION=`find "${SDK_PATH}/toolchains/llvm/prebuilt/" \
-                            -name "${ANDROID_TOOLCHAIN_ALT_PREFIX}${ANDROID_NDK_API}-clang*" -print -quit`
+                            -name "${ANDROID_TOOLCHAIN_ALT_PREFIX}${_ANDROID_NDK_API_INT}-clang*" -print -quit`
          ANDROID_TEMP_TOOLCHAIN_PREFIX=${ANDROID_TOOLCHAIN_ALT_PREFIX}
          USE_GCC="NO"
        elif [ ${FOUND} -eq 0 ]; then
-         echo "clang found as ${ANDROID_TOOLCHAIN_PREFIX}${ANDROID_NDK_API}-clang"
+         echo "clang found as ${ANDROID_TOOLCHAIN_PREFIX}${_ANDROID_NDK_API_INT}-clang"
          FOUND=1
        fi
 
        if [ -z "${COMPILER_LOCATION}" ]; then
-         echo "clang not found as ${ANDROID_TOOLCHAIN_ALT_PREFIX}${ANDROID_NDK_API}-clang"
+         echo "clang not found as ${ANDROID_TOOLCHAIN_ALT_PREFIX}${_ANDROID_NDK_API_INT}-clang"
        fi
 
        if [ "${USE_GCC}" = "NO" ]; then
          echo "Using clang at ${COMPILER_LOCATION%/*}/${ANDROID_TEMP_TOOLCHAIN_PREFIX}-clang"
          TOOLCHAIN_PATH=${COMPILER_LOCATION%/*}/${ANDROID_TEMP_TOOLCHAIN_PREFIX}-
-         CC=${COMPILER_LOCATION%/*}/${ANDROID_TEMP_TOOLCHAIN_PREFIX}${ANDROID_NDK_API}-clang
-         CXX=${COMPILER_LOCATION%/*}/${ANDROID_TEMP_TOOLCHAIN_PREFIX}${ANDROID_NDK_API}-clang++
+         CC=${COMPILER_LOCATION%/*}/${ANDROID_TEMP_TOOLCHAIN_PREFIX}${_ANDROID_NDK_API_INT}-clang
+         CXX=${COMPILER_LOCATION%/*}/${ANDROID_TEMP_TOOLCHAIN_PREFIX}${_ANDROID_NDK_API_INT}-clang++
 
          if [ -x ${TOOLCHAIN_PATH}ar ]; then 
            echo "ar, ld, as, strip and nm seems to have the same toolchain path than clang"
