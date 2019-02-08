@@ -925,7 +925,7 @@ process_common_toolchain() {
            ;;
          x86)
            ANDROID_TOOLCHAIN_PREFIX=x86-linux-android
-           ANDROID_TOOLCHAIN_ALT_PREFIX=x86_64-linux-android
+           ANDROID_TOOLCHAIN_ALT_PREFIX=i686-linux-android
            ANDROID_TOOLCHAIN_ARCH=x86
            ;;
          x86_64)
@@ -993,6 +993,7 @@ process_common_toolchain() {
          else
            echo "Couldn't find ar at ${TOOLCHAIN_PATH}ar, using ${COMPILER_LOCATION%/*}/${ANDROID_TOOLCHAIN_PREFIX}-ar instead and same for ld, as, strip and nm"
            TOOLCHAIN_PATH=${COMPILER_LOCATION%/*}/${ANDROID_TOOLCHAIN_PREFIX}-
+           ANDROID_TEMP_TOOLCHAIN_PREFIX=${ANDROID_TOOLCHAIN_PREFIX}
          fi
          AR=${TOOLCHAIN_PATH}ar
          LD=${TOOLCHAIN_PATH}ld
@@ -1055,12 +1056,7 @@ process_common_toolchain() {
          add_cflags "-I${SDK_PATH}/sources/android/cpufeatures"
        fi
 
-       add_cflags "-I${SDK_PATH}/sysroot/usr/include"
-       if [ -d ${ANDROID_TOOLCHAIN_PREFIX} ]; then
-         add_cflags "-I${SDK_PATH}/sysroot/usr/include/${ANDROID_TOOLCHAIN_ALT_PREFIX}"
-       else
-         add_cflags "-I${SDK_PATH}/sysroot/usr/include/${ANDROID_TOOLCHAIN_PREFIX}"
-       fi
+       add_cflags "-I${SDK_PATH}/sysroot/usr/include -I${SDK_PATH}/sysroot/usr/include/${ANDROID_TEMP_TOOLCHAIN_PREFIX}"
        ;;
    esac
 
